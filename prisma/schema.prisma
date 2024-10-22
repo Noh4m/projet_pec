@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model Utilisateur {
+  id            Int       @id @default(autoincrement())
+  nom           String
+  email         String     @unique
+  motDePasse    String
+  adresse       String
+  telephone     String
+  commandes     Commande[] // Relation one-to-many avec Commande
+  panier        Panier?    // Relation optionnelle one-to-one avec Panier
+}
+
+model Produit {
+  id            Int       @id @default(autoincrement())
+  nom           String
+  description   String
+  prix          Float
+  stock         Int
+  categorie     Categorie @relation(fields: [idCategorie], references: [id])
+  idCategorie   Int
+  magasin       Magasin   @relation(fields: [idMagasin], references: [id])
+  idMagasin     Int
+  panierProduits PanierProduit[] // Relation many-to-many avec Panier
+  commandes     CommandeProduit[] // Relation many-to-many avec Commande
+}
+
+model Categorie {
+  id            Int        @id @default(autoincrement())
+  nomCategorie  String
+  produits      Produit[]
+}
+
+model Magasin {
+  id            Int        @id @default(autoincrement())
+  nomMagasin    String
+  adresse       String
+  telephone     String
+  produits      Produit[]
+  commandes     Commande[]
+}
+
+model Commande {
+  id            Int          @id @default(autoincrement())
+  utilisateur   Utilisateur  @relation(fields: [idUtilisateur], references: [id])
+  idUtilisateur Int
+  dateCommande  DateTime     @default(now())
+  totalPrix     Float
+  statut        String
+  magasin       Magasin      @relation(fields: [idMagasin], references: [id])
+  idMagasin     Int
+  produits      CommandeProduit[] // Relation many-to-many avec Produit
+  livraison     Livraison?   // Relation optionnelle one-to-one avec Livraison
+  paiement      Paiement?    // Relation optionnelle one-to-one avec Paiement
+}
+
+model Panier {
+  id            Int           @id @default(autoincrement())
+  utilisateur   Utilisateur   @relation(fields: [idUtilisateur], references: [id])
+  idUtilisateur Int             @unique // Assurer l'unicité pour la relation one-to-one
+  panierProduits PanierProduit[] // Relation many-to-many avec Produit
+  dateAjout     DateTime      @default(now())
+}
+
+model PanierProduit {
+  id            Int       @id @default(autoincrement())
+  panier        Panier    @relation(fields: [idPanier], references: [id])
+  idPanier      Int
+  produit       Produit   @relation(fields: [idProduit], references: [id])
+  idProduit     Int
+  quantite      Int
+}
+
+model CommandeProduit {
+  id            Int       @id @default(autoincrement())
+  commande      Commande  @relation(fields: [idCommande], references: [id])
+  idCommande    Int
+  produit       Produit   @relation(fields: [idProduit], references: [id])
+  idProduit     Int
+  quantite      Int
+}
+
+model Livraison {
+  id            Int       @id @default(autoincrement())
+  commande      Commande  @relation(fields: [idCommande], references: [id])
+  idCommande    Int       @unique // Assurer l'unicité pour la relation one-to-one
+  service       String
+  adresse       String
+  dateLivraison DateTime
+  statut        String
+}
+
+model Paiement {
+  id            Int       @id @default(autoincrement())
+  commande      Commande  @relation(fields: [idCommande], references: [id])
+  idCommande    Int       @unique // Assurer l'unicité pour la relation one-to-one
+  montant       Float
+  modePaiement  String
+  statut        String
+  datePaiement  DateTime
+}
