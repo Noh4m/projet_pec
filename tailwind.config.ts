@@ -9,11 +9,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        // Exemple de couleurs personnalisées
+        background: "#f8fafc", // Couleur de fond personnalisée
+        foreground: "#111827", // Couleur de texte personnalisée
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Ajoutez vos plugins ici si nécessaire
+  ],
 };
+
 export default config;

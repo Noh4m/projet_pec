@@ -7,102 +7,196 @@ datasource db {
   url      = env("POSTGRES_URL")
 }
 
+// Utilisateurs et leurs informations de base
 model Utilisateur {
-  id            Int       @id @default(autoincrement())
-  nom           String
-  email         String     @unique
-  motDePasse    String
-  adresse       String
-  telephone     String
-  commandes     Commande[] // Relation one-to-many avec Commande
-  panier        Panier?    // Relation optionnelle one-to-one avec Panier
-}
-
-model Produit {
-  id            Int       @id @default(autoincrement())
-  nom           String
-  description   String
-  prix          Float
-  stock         Int
-  categorie     Categorie @relation(fields: [idCategorie], references: [id])
-  idCategorie   Int
-  magasin       Magasin   @relation(fields: [idMagasin], references: [id])
-  idMagasin     Int
-  panierProduits PanierProduit[] // Relation many-to-many avec Panier
-  commandes     CommandeProduit[] // Relation many-to-many avec Commande
-}
-
-model Categorie {
-  id            Int        @id @default(autoincrement())
-  nomCategorie  String
-  produits      Produit[]
-}
-
-model Magasin {
-  id            Int        @id @default(autoincrement())
-  nomMagasin    String
-  adresse       String
-  telephone     String
-  produits      Produit[]
-  commandes     Commande[]
-}
-
-model Commande {
-  id            Int          @id @default(autoincrement())
-  utilisateur   Utilisateur  @relation(fields: [idUtilisateur], references: [id])
-  idUtilisateur Int
-  dateCommande  DateTime     @default(now())
-  totalPrix     Float
-  statut        String
-  magasin       Magasin      @relation(fields: [idMagasin], references: [id])
-  idMagasin     Int
-  produits      CommandeProduit[] // Relation many-to-many avec Produit
-  livraison     Livraison?   // Relation optionnelle one-to-one avec Livraison
-  paiement      Paiement?    // Relation optionnelle one-to-one avec Paiement
-}
-
-model Panier {
   id            Int           @id @default(autoincrement())
-  utilisateur   Utilisateur   @relation(fields: [idUtilisateur], references: [id])
-  idUtilisateur Int             @unique // Assurer l'unicité pour la relation one-to-one
-  panierProduits PanierProduit[] // Relation many-to-many avec Produit
-  dateAjout     DateTime      @default(now())
+  nom           String
+  email         String        @unique
+  passwordHash  String
+  adresse       String?
+  phone         String?
+  resetToken    String?
+  isActive      Boolean       @default(true)
+  type          Role          @relation(fields: [typeId], references: [id])
+  typeId        Int
+  dateCreation  DateTime      @default(now())
+  commandes     Commande[]    @relation("CommandeClient")
+  produits      Produit[]     @relation("Ajoute")
+  avis          Avis[]        // Inverse relation for `Avis`
+  adresses      Adresse[]     // Historique d'adresses multiples
 }
 
-model PanierProduit {
-  id            Int       @id @default(autoincrement())
-  panier        Panier    @relation(fields: [idPanier], references: [id])
-  idPanier      Int
-  produit       Produit   @relation(fields: [idProduit], references: [id])
-  idProduit     Int
-  quantite      Int
+// Rôles définis pour les utilisateurs (ex : client, admin)
+model Role {
+  id            Int           @id @default(autoincrement())
+  nom           String
+  utilisateurs  Utilisateur[]
 }
 
-model CommandeProduit {
-  id            Int       @id @default(autoincrement())
-  commande      Commande  @relation(fields: [idCommande], references: [id])
-  idCommande    Int
-  produit       Produit   @relation(fields: [idProduit], references: [id])
-  idProduit     Int
-  quantite      Int
+// Produits disponibles à la vente
+model Produit {
+  id             Int             @id @default(autoincrement())
+  nom            String
+  description    String?
+  prix           Float
+  stock          Int
+  categorie      Categorie       @relation(fields: [categorieId], references: [id])
+  categorieId    Int
+  images         Image[]
+  utilisateurs   Utilisateur[]   @relation("Ajoute")
+  commandeDetails DetailCommande[]
+  alertes        Alertes[]       // Inverse relation for `Alertes`
+  variantes      Variante[]      // Différentes options pour le produit (ex : tailles, couleurs)
+  promotions     Promotion[]     // Promotions associées
+  avis           Avis[]          // Avis clients
 }
 
+// Catégories pour organiser les produits
+model Categorie {
+  id            Int           @id @default(autoincrement())
+  nom           String
+  produits      Produit[]
+}
+
+// Variantes d'un produit (ex : tailles, couleurs)
+model Variante {
+  id            Int        @id @default(autoincrement())
+  produit       Produit    @relation(fields: [produitId], references: [id])
+  produitId     Int
+  nom           String
+  valeur        String
+}
+
+// Promotions appliquées aux produits
+model Promotion {
+  id            Int        @id @default(autoincrement())
+  produit       Produit?   @relation(fields: [produitId], references: [id])
+  produitId     Int?
+  reduction     Float
+  dateDebut     DateTime
+  dateFin       DateTime
+}
+
+// Commandes passées par les utilisateurs
+model Commande {
+  id             Int               @id @default(autoincrement())
+  client         Utilisateur       @relation("CommandeClient", fields: [clientId], references: [id])
+  clientId       Int
+  statut         CommandeStatut      @relation(fields: [statutId], references: [id])
+  statutId       Int
+  statutHistorique CommandeStatutHistorique[] // Historique des changements de statut
+  total          Float
+  dateCommande   DateTime          @default(now())
+  livraison      Livraison?
+  paiement       Paiement?
+  commandeDetails DetailCommande[]
+}
+
+// Statuts possibles pour une commande (ex : en cours, expédié)
+model CommandeStatut {
+  id             Int                      @id @default(autoincrement())
+  statut         String                   @unique
+  commandes      Commande[]               // Inverse relation with `Commande`
+  statutHistorique CommandeStatutHistorique[] // Added inverse relation
+}
+
+// Historique des statuts d'une commande
+model CommandeStatutHistorique {
+  id            Int        @id @default(autoincrement())
+  commande      Commande   @relation(fields: [commandeId], references: [id])
+  commandeId    Int
+  statut        CommandeStatut @relation(fields: [statutId], references: [id])
+  statutId      Int
+  dateStatut    DateTime   @default(now())
+}
+
+// Détails des produits dans chaque commande
+model DetailCommande {
+  id             Int              @id @default(autoincrement())
+  commande       Commande         @relation(fields: [commandeId], references: [id])
+  commandeId     Int
+  produit        Produit          @relation(fields: [produitId], references: [id])
+  produitId      Int
+  quantite       Int
+  prixUnitaire   Float
+}
+
+// Informations de livraison pour les commandes
 model Livraison {
-  id            Int       @id @default(autoincrement())
-  commande      Commande  @relation(fields: [idCommande], references: [id])
-  idCommande    Int       @unique // Assurer l'unicité pour la relation one-to-one
-  service       String
-  adresse       String
-  dateLivraison DateTime
-  statut        String
+  id             Int              @id @default(autoincrement())
+  commande       Commande         @relation(fields: [commandeId], references: [id])
+  commandeId     Int @unique
+  adresse        String
+  typeLivraison  TypeLivraison    @relation(fields: [typeLivraisonId], references: [id])
+  typeLivraisonId Int
+  statut         String
+  dateLivraison  DateTime?
+  trackingNumber String?
 }
 
+// Types de livraison disponibles (ex : standard, express)
+model TypeLivraison {
+  id            Int        @id @default(autoincrement())
+  type          String     @unique
+  livraisons    Livraison[]
+}
+
+// Adresses associées aux utilisateurs
+model Adresse {
+  id           Int         @id @default(autoincrement())
+  utilisateur  Utilisateur @relation(fields: [utilisateurId], references: [id])
+  utilisateurId Int
+  adresse       String
+  ville         String
+  codePostal    String
+  pays          String
+}
+
+// Informations de paiement pour les commandes
 model Paiement {
-  id            Int       @id @default(autoincrement())
-  commande      Commande  @relation(fields: [idCommande], references: [id])
-  idCommande    Int       @unique // Assurer l'unicité pour la relation one-to-one
-  montant       Float
-  modePaiement  String
-  statut        String
-  datePaiement  DateTime
+  id             Int              @id @default(autoincrement())
+  commande       Commande         @relation(fields: [commandeId], references: [id])
+  commandeId     Int @unique
+  montant        Float
+  mode           ModePaiement     @relation(fields: [modeId], references: [id])
+  modeId         Int
+  statutPaiement String
+  datePaiement   DateTime         @default(now())
+  transactionId  String?
+}
+
+// Méthodes de paiement disponibles (ex : carte, PayPal)
+model ModePaiement {
+  id             Int              @id @default(autoincrement())
+  mode           String           @unique
+  paiements      Paiement[]       // Inverse relation for `Paiement`
+}
+
+// Images associées aux produits
+model Image {
+  id             Int              @id @default(autoincrement())
+  url            String
+  produit        Produit          @relation(fields: [produitId], references: [id])
+  produitId      Int
+}
+
+// Avis laissés par les utilisateurs sur les produits
+model Avis {
+  id            Int        @id @default(autoincrement())
+  produit       Produit    @relation(fields: [produitId], references: [id])
+  produitId     Int
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])
+  utilisateurId Int
+  note          Int
+  commentaire   String?
+  dateAvis      DateTime   @default(now())
+}
+
+// Alertes et notifications pour les produits (ex : rupture de stock)
+model Alertes {
+  id             Int              @id @default(autoincrement())
+  produit        Produit          @relation(fields: [produitId], references: [id])  
+  produitId      Int
+  message        String
+  dateAlerte     DateTime         @default(now())
 }
