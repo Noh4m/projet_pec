@@ -34,17 +34,15 @@ export async function POST(req: Request) {
     expiresIn: '1h',
   });
 
-  // Stocker la session dans la base de données (si applicable)
-  // Uncomment this if you have a session model defined
-  /*
+  // Stocker la session dans la base de données (des que session est ajoutée)
+  
   await prisma.session.create({
     data: {
       userId: user.id,
       token,
       expiresAt: new Date(Date.now() + 60 * 60 * 1000), // Expire dans 1 heure
     },
-  });
-  */
+ });
 
   return NextResponse.json({ token }, { status: 200 });
 }

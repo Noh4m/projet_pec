@@ -24,6 +24,7 @@ model Utilisateur {
   produits      Produit[]     @relation("Ajoute")
   avis          Avis[]        // Inverse relation for `Avis`
   adresses      Adresse[]     // Historique d'adresses multiples
+  sessions     Session[]
 }
 
 // Rôles définis pour les utilisateurs (ex : client, admin)
@@ -32,6 +33,15 @@ model Role {
   nom           String
   utilisateurs  Utilisateur[]
 }
+//Session pour jwt 
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String
+  expiresAt DateTime
+  user      Utilisateur @relation(fields: [userId], references: [id])
+}
+
 
 // Produits disponibles à la vente
 model Produit {
