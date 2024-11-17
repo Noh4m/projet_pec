@@ -40,6 +40,8 @@ export default function LoginPage() {
           className="mx-auto h-10 w-auto"
           src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=600"
           alt="Your Company"
+          width={40}
+          height={40}
         />
         <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
           Se connecter à votre compte

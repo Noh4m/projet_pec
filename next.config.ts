@@ -8,6 +8,16 @@ const nextConfig = {
     });
     return config;
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'tailwindui.com',
+        pathname: '/plus/img/logos/**',
+      },
+    ],
+    dangerouslyAllowSVG: true, // Active cette option pour autoriser les SVG
+  },
 };
 
 export default nextConfig;
