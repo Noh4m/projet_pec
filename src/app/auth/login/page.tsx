@@ -12,26 +12,33 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleLogin = async () => {
-    setIsLoading(true); // Start loading
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }), // Changed to 'password'
-    });
-
-    setIsLoading(false); // End loading
-
-    if (res.ok) {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      setIsLoading(false);
+      
+      if (!res.ok) {
+        // Essayer de lire le JSON, sinon lancer une erreur générique
+        const errorData = await res.json().catch(() => ({ error: 'Erreur serveur' }));
+        alert(errorData.error || 'Une erreur est survenue');
+        return;
+      }
+      
       const { token } = await res.json();
       localStorage.setItem('token', token);
-      router.push('/dashboard'); // Redirect to a protected page
-    } else {
-      const errorData = await res.json();
-      alert(errorData.error);
+      router.push('/dashboard');
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Erreur lors de la connexion:', error);
+      alert('Une erreur inattendue est survenue.');
     }
   };
+  
 
   return (
     <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
