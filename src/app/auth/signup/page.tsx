@@ -15,28 +15,58 @@ export default function SignUpPage() {
   const [role, setRole] = useState('client'); // Default role
   const router = useRouter();
 
-  const handleSignUp = async (e: { preventDefault: () => void; }) => {
-    e.preventDefault(); // Prevent form submission
-
-    // Log the data being sent for debugging purposes
-    console.log({ email, password, prenom, nom, address, telephone, role });
-
-    const res = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password, prenom, nom, address, telephone, role }),
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault(); // Empêche la soumission du formulaire par défaut
+  
+    // Log des données envoyées pour le débogage
+    console.log({
+      email,
+      password,
+      prenom,
+      nom,
+      address,
+      telephone,
+      role,
     });
-
-    if (res.ok) {
-      router.push('/auth/login'); // Redirect to login page on success
-    } else {
-      const errorData = await res.json();
-      alert(errorData.error); // Display error message
+  
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          prenom,
+          nom,
+          address,
+          telephone,
+          role,
+        }),
+      });
+  
+      if (res.ok) {
+        // Succès : redirection vers la page de connexion
+        router.push('/auth/login');
+      } else {
+        // Vérifie si la réponse est en JSON
+        const contentType = res.headers.get('Content-Type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await res.json();
+          alert(errorData.error || 'Une erreur est survenue.');
+        } else {
+          // Si la réponse n'est pas en JSON
+          alert('Erreur inattendue. Veuillez réessayer.');
+        }
+      }
+    } catch (err) {
+      // Gestion des erreurs réseau ou autres exceptions
+      console.error('Erreur lors de la requête:', err);
+      alert('Impossible de contacter le serveur. Vérifiez votre connexion.');
     }
   };
-
+  
   return (
     <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8 bg-white-100">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">

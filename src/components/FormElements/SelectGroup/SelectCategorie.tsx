@@ -1,43 +1,83 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const SelectCategorie: React.FC = () => {
-  const [selectedOption, setSelectedOption] = useState<string>("");
+export interface Category {
+  id: number;
+  nom: string;
+  logo?: string;
+}
+
+// Rendons onCategoryChange optionnel avec un '?'
+export interface SelectCategoriesProps {
+  selectedCategory?: Category | null;
+  onCategoryChange?: (category: Category) => void;
+}
+
+const SelectCategorie: React.FC<SelectCategoriesProps> = ({ 
+  selectedCategory, 
+  onCategoryChange 
+}) => {
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isOptionSelected, setIsOptionSelected] = useState<boolean>(false);
+  const [selectedValue, setSelectedValue] = useState<number | ''>('');
 
-  const changeTextColor = () => {
-    setIsOptionSelected(true);
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("/api/categoriesAdmin"); 
+        if (!response.ok) {
+          throw new Error("Erreur lors de la récupération des catégories");
+        }
+        const data = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error("Erreur :", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const handleSelectionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = parseInt(e.target.value);
+    setSelectedValue(selectedId);
+    
+    const selectedCategory = categories.find(cat => cat.id === selectedId);
+    if (selectedCategory) {
+      // Vérifions si onCategoryChange existe avant de l'appeler
+      if (onCategoryChange) {
+        onCategoryChange(selectedCategory);
+      }
+      setIsOptionSelected(true);
+    }
   };
 
   return (
     <div className="">
       <label className="mb-3 block text-body-sm font-medium text-dark dark:text-white">
-       Selectionner un Rayon 
+        Sélectionner un Rayon
       </label>
 
       <div className="relative z-20 bg-transparent dark:bg-dark-2">
         <select
-          value={selectedOption}
-          onChange={(e) => {
-            setSelectedOption(e.target.value);
-            changeTextColor();
-          }}
+          value={selectedValue}
+          onChange={handleSelectionChange}
           className={`relative z-20 w-full appearance-none rounded-[7px] border border-stroke bg-transparent px-5.5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-dark-3 dark:bg-dark-2 dark:focus:border-primary ${
             isOptionSelected ? "text-dark dark:text-white" : ""
           }`}
         >
           <option value="" disabled className="text-dark-6">
-            Sélectionner votre Rayon 
+            Sélectionner votre Rayon
           </option>
-          <option value="USA" className="text-dark-6">
-            A
-          </option>
-          <option value="UK" className="text-dark-6">
-            B
-          </option>
-          <option value="Canada" className="text-dark-6">
-            C
-          </option>
+          {categories.map((categorie) => (
+            <option
+              key={categorie.id}
+              value={categorie.id}
+              className="text-dark-6"
+            >
+              {categorie.nom}
+            </option>
+          ))}
         </select>
 
         <span className="absolute right-4 top-1/2 z-30 -translate-y-1/2">

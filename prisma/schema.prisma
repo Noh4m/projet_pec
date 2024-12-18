@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "windows"]
 }
 
 datasource db {
@@ -63,10 +64,15 @@ model Produit {
 
 // Catégories pour organiser les produits
 model Categorie {
-  id            Int           @id @default(autoincrement())
-  nom           String
-  produits      Produit[]
+  id        Int       @id @default(autoincrement())
+  nom       String
+  logo      String?   // Le ? indique que c'est optionnel
+  produits  Produit[]
+  createdAt DateTime  @default(now()) 
+  updatedAt DateTime  @updatedAt
 }
+
+
 
 // Variantes d'un produit (ex : tailles, couleurs)
 model Variante {
